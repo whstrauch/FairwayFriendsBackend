@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: authservice-configmap
+data:
+  POSTGRESQL_HOST: host.minikube.internal
+  POSTGRESQL_USER: willstrauch
+  POSTGRESQL_DB: fairwayfriends
+  POSTGRESQL_PORT: "5432"

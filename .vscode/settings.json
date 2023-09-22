@@ -1,0 +1,7 @@
+{
+    "python.defaultInterpreterPath": "/Users/willstrauch/Fairwayfriendsmain/python/src/scoreservice/env/bin/python",
+    "python.autoComplete.extraPaths": [
+    
+    ],
+    "python.analysis.extraPaths": []
+}
