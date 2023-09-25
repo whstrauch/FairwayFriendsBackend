@@ -242,9 +242,16 @@ def search():
 
     
     statement = db.select(UserModel.user_id, UserModel.username, UserModel.name, UserModel.profile_pic).where(rules).limit(15).offset((int(page) - 1) * 15)
-    print(statement)
     results = list(db.session.execute(statement))
     return [dict(result._mapping) for result in results], 200
+
+@user.post("/userlist")
+def get_user_list():
+    data = request.get_json(force=True)
+    user_list = data.get("users")
+    stmt = db.select(UserModel.user_id, UserModel.name, UserModel.username, UserModel.profile_pic).where(UserModel.user_id.in_(user_list))
+    result = {user._asdict()["user_id"]: user._asdict() for user in db.session.execute(stmt)}
+    return result, 200
 
 
 # TESTING ROUTE FUNCTION

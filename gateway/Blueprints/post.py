@@ -224,22 +224,21 @@ def like_post():
     valid, err = validate.token(request)
     if err:
         return err
+    data = request.get_json(force=True)
+
+    message = post_request.request('like/add', "POST", data)
+    return message.text, message.status_code
 
     ## Send message to notification service to notify liked account
-    pass
 
-@post_routes.get('/post/likes')
-def get_likes():
+@post_routes.get('/like/<int:post_id>/<int:user_id>')
+def is_liked(post_id, user_id):
     """
-    Get list of user ids that have liked post from given post id. So get list of like
-    ids and there corresponding users?
+    Checks if user has liked post.
     """
-
-    valid, err = validate.token(request)
-    if err:
-        return err
-
-    pass
+    message = post_request.request(f'like/{post_id}/{user_id}', "GET")
+    return message.json(), message.status_code
+  
 
 @post_routes.delete('/post/like/delete')
 def delete_like_post():
@@ -251,7 +250,10 @@ def delete_like_post():
     if err:
         return err
 
-    pass
+    data = request.get_json(force=True)
+
+    message = post_request.request('like/remove', "DELETE", data)
+    return message.text, message.status_code
 
 @post_routes.post('/post/comment')
 def comment_post():
@@ -263,10 +265,13 @@ def comment_post():
     if err:
         return err
 
-    pass
+    data = request.get_json(force=True)
 
-@post_routes.get('/post/comments')
-def get_comments():
+    message = post_request.request('comment/add', "POST", data)
+    return message.text, message.status_code
+
+@post_routes.get('/post/comments/<int:id>')
+def get_comments(id):
     """
     Get list of comments from given post id -> text, and user
     """
@@ -274,7 +279,13 @@ def get_comments():
     if err:
         return err
 
+    data = request.get_json(force=True)
+
+    message = post_request.request('')
+
     pass
+
+    
 
 @post_routes.delete('/post/comment/delete')
 def delete_comment_post():

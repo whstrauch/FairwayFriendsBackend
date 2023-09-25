@@ -1,7 +1,7 @@
 from flask import request, Blueprint
 from models import db, PostModel, LikesModel, CommentModel, TagsModel, MediaModel
 from datetime import datetime, timezone
-from sqlalchemy import desc
+from sqlalchemy import desc, func
 
 post = Blueprint("post", __name__)
 
@@ -115,6 +115,18 @@ def edit():
         return "Need to provide edits", 400
 
 
+@post.get('/like/<int:post_id>/<int:user_id>')
+def is_liked(post_id, user_id):
+    """
+    Checks if user has liked post.
+    """
+    is_liked = db.session.scalar(db.select(func.count(LikesModel.id)).where(LikesModel.post_id == post_id).where(LikesModel.user_id == user_id))
+    
+    return {"is_liked": bool(is_liked)}, 200
+
+
+
+
 @post.post('/like/add')
 def like():
     """
@@ -128,17 +140,14 @@ def like():
             timestamp = datetime.now(timezone.utc)
         )
         post = db.get_or_404(PostModel, data["post_id"])
-        if post.user_id == data["user_id"]:
-            try:
-                post.likes.append(like)
-                db.session.commit()
-                ## Add in message to be sent to notification service
-                return "Success", 201
-            except:
-                return "Failure", 400
-        else:
-            return "Failure", 403
-    return "failure", 400
+        try:
+            post.likes.append(like)
+            db.session.commit()
+            ## Add in message to be sent to notification service
+            return {"text": "Success"}, 201
+        except:
+            return {"text":"Failure"}, 400
+    return {"text":"Failure"}, 400
 
 @post.delete('/like/remove')
 def delete_like():
@@ -149,12 +158,13 @@ def delete_like():
     if data is not None:
         try:
             post = db.get_or_404(PostModel, data["post_id"])
-            post.likes = list(filter(lambda like: like.user_id == data["user_id"], post.likes))
+            post.likes = list(filter(lambda like: like.user_id != data["user_id"], post.likes))
             db.session.commit()
             return "Success", 201
         except:
             return "failure", 404
     return "failure", 400
+
 
 @post.post('/comment/add')
 def comment():
@@ -163,7 +173,7 @@ def comment():
     """
     data = request.get_json(force=True)
     if data is not None:
-        try:
+        # try:
             comment = CommentModel(
                 post_id = data["post_id"],
                 user_id = data["user_id"],
@@ -173,10 +183,10 @@ def comment():
             db.session.add(comment)
             db.session.commit()
             ## Add in message to be sent to notification service.
-            return "Success", 201
-        except:
-            return "Failure", 400
-    return "Must provide proper params", 400
+            return {"text": "Success"}, 201
+        # except:
+        #     return {"text": "Failure1"}, 400
+    return {"text": "Must provide proper params"}, 400
 
 @post.delete('/comment/remove')
 def delete_comment():
@@ -190,12 +200,12 @@ def delete_comment():
             try:
                 db.session.delete(comment)
                 db.session.commit()
-                return "Success", 201
+                return {"text": "Success"}, 201
             except:
-                return "Failure", 400
+                return {"text": "Failure"}, 400
         else:
-            return "Failure", 403
-    return "Must provide proper params", 400
+            return {"text": "Failure"}, 403
+    return {"text": "Must provide proper params"}, 400
 
 @post.put('/comment/edit')
 def edit_comment():

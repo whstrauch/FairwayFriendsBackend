@@ -73,10 +73,9 @@ class CommentModel(db.Model):
 
     def toJSON(self):
         return {
-            "post_id": self.post_id,
             "user_id": self.user_id,
-            "comment": self.comment,
-            "timestamp": self.timestamp
+            "timestamp": self.timestamp,
+            "comment": self.comment
         }
 
     def __repr__(self) -> str:

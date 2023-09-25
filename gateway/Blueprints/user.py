@@ -191,12 +191,27 @@ def follow_request():
     if err:
         return err
 
-    resp = user_request.request(f'follow', "POST", request.get_json(force=True))
+    resp = user_request.request('follow', "POST", request.get_json(force=True))
 
     if resp.status_code == 200:
         return resp.text, 200
     else:
         return resp.text, resp.status_code
+
+@user_routes.post('/user/users')
+def get_user_list():
+    """
+    Get list of users, for comments and likes lists.
+    Should add pagination
+    """
+    valid, err = validate.token(request)
+    if err:
+        return err
+    
+    resp = user_request.request('userlist', "POST", request.get_json(force=True))
+
+    return resp.json(), resp.status_code
+
 
 
 
