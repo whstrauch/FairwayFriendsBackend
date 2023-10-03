@@ -29,12 +29,14 @@ class TagsModel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
     user_id = db.Column(db.Integer, nullable=False)
+    user_name = db.Column(db.String(120))
     post = db.relationship("PostModel", back_populates="tags")
 
     def toJSON(self):
         return {
             "post_id": self.post_id,
-            "user_id": self.user_id
+            "user_id": self.user_id,
+            "user_name": self.user_name
         }
 
     def __repr__(self) -> str:
@@ -110,8 +112,8 @@ class PostModel(db.Model):
             "title": self.title,
             "caption": self.caption,
             "ratio": self.ratio,
-            "likes": [like.toJSON() for like in self.likes],
-            "comments": [comment.toJSON() for comment in self.comments],
+            "likes": [like.toJSON() for like in self.likes], #This could create performance issues, milions of likes -> unlikely this happens anyways, deal w later
+            "comments": [comment.toJSON() for comment in self.comments], #This could create performance issues
             "tags": [tag.toJSON() for tag in self.tags],
             "date": self.date.isoformat(),
             "media": [img.toJSON() for img in self.media]

@@ -21,14 +21,18 @@ Routes needed:
     Update tags
 """
 
-@post.get('/get/<int:id>')
-def get_post(id):
+@post.post('/getlist')
+def get_posts():
     """
-    Gets post from given id, might add ability to request lots of ids at once
+    Gets posts from given ids, might add ability to request lots of ids at once
     """
+    data = request.get_json(force=True)
     try:
-        post = db.get_or_404(PostModel, id)
-        return post.toJSON(), 200
+        posts = db.session.execute(db.select(PostModel).where(PostModel.id.in_(data["ids"])))
+        returned = []
+        for post in posts.scalars():
+            returned.append(post.toJSON())
+        return returned, 200
     except:
         "Failed", 400
 
@@ -36,13 +40,10 @@ def get_post(id):
 def get_user_posts(id):
     # try:
         stmt = db.select(PostModel).where(PostModel.user_id == id).order_by(desc(PostModel.date))
-        print("state", stmt)
         posts = db.session.execute(stmt)
         returned = []
         for post in posts.scalars():
-            print(type(post))
             returned.append(post.toJSON())
-        print(returned)
         return returned, 200
     # except:
         # return "Failed", 400
@@ -236,10 +237,12 @@ def add_tags():
     if data is not None:
         post = db.get_or_404(PostModel, data["post_id"])
         try:
-            for user_id in data["tagged"]:
+            for user in data["tagged"]:
+                split_user = user.split(",")
                 post.tags.append(
                     TagsModel(
-                        user_id=user_id,
+                        user_id=split_user[0],
+                        user_name=split_user[1],
                         post_id=post.id
                     )
                 )

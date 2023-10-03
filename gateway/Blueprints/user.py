@@ -172,6 +172,14 @@ def get_following(id, main_id):
     else:
         return resp.text, resp.status_code
 
+@user_routes.get('/user/isfollowing/<int:id>/<int:main_id>')
+def is_following(id, main_id):
+    valid, err = validate.token(request)
+    if err: return err
+
+    resp = user_request.request(f'isfollowing/{id}/{main_id}', "GET")
+    return {"status" :resp.text}, resp.status_code
+
 @user_routes.delete('/user/unfollow')
 def unfollow():
     valid, err = validate.token(request)

@@ -164,6 +164,18 @@ def unfollow():
     #     return "Failure", 400
 
 
+@user.get("/isfollowing/<int:id>/<int:main_id>")
+def is_following(id, main_id):
+    """
+    Determines status of relationship.
+    """
+    stmt = db.select(SocialRelationships).where(SocialRelationships.follower_id == main_id).where(SocialRelationships.followee_id == id)
+    print(stmt, id, main_id)
+    result = db.session.scalar(stmt)
+    if result is None:
+        return "new", 200
+    return result.status, 200
+
 @user.get("/followers/get/<int:id>/<int:main_id>")
 def get_followers(id, main_id):
     """
@@ -178,7 +190,7 @@ def get_followers(id, main_id):
         # ).order_by(SocialRelationships.follower_id))
     stmt = text(f"""SELECT
             public.user.name AS name,
-            public.user.user_id AS id,
+            public.user.user_id AS user_id,
             public.user.username AS username,
             public.user.profile_pic AS profile_pic,
             public.social_relationships.status,
@@ -198,6 +210,8 @@ def get_followers(id, main_id):
     # except Exception as e:
     #     return e, 400
 
+
+
 @user.get("/following/get/<int:id>/<int:main_id>")
 def get_following(id, main_id):
     """
@@ -206,7 +220,7 @@ def get_following(id, main_id):
     # try:
     stmt = text(f"""SELECT
             public.user.name AS name,
-            public.user.user_id AS id,
+            public.user.user_id AS user_id,
             public.user.username AS username,
             public.user.profile_pic AS profile_pic,
             public.social_relationships.status,
@@ -235,18 +249,38 @@ def get_following(id, main_id):
 def search():
     query = request.args.get('query')
     page = request.args.get('page', 1)
+    main_id = request.args.get("main_id")
     sep = "<->"
     rules = or_(func.lower(UserModel.name).like(f"%{query.lower()}%"),
                 func.lower(UserModel.username).like(f"%{query.lower()}%")
             )
 
+    stmt = text(f"""SELECT
+            public.user.name AS name,
+            public.user.user_id AS user_id,
+            public.user.username AS username,
+            public.user.profile_pic AS profile_pic,
+            COALESCE(r.status, 'new') AS is_following
+        FROM
+            public.user
+        LEFT JOIN
+            public.social_relationships r ON public.user.user_id = r.followee_id AND r.follower_id = {main_id}
+      
+        WHERE lower(public.user.name) LIKE '%{query.lower()}%' OR lower("user".username) LIKE '%{query.lower()}%'
+            AND (r.follower_id = {main_id} OR r.follower_id IS NULL)
+            """)
+
     
-    statement = db.select(UserModel.user_id, UserModel.username, UserModel.name, UserModel.profile_pic).where(rules).limit(15).offset((int(page) - 1) * 15)
-    results = list(db.session.execute(statement))
+    # statement = db.select(UserModel.user_id, UserModel.username, UserModel.name, UserModel.profile_pic).where(rules).limit(15).offset((int(page) - 1) * 15)
+    print(stmt)
+    results = list(db.session.execute(stmt))
     return [dict(result._mapping) for result in results], 200
 
 @user.post("/userlist")
 def get_user_list():
+    """
+    Get list of users from ids.
+    """
     data = request.get_json(force=True)
     user_list = data.get("users")
     stmt = db.select(UserModel.user_id, UserModel.name, UserModel.username, UserModel.profile_pic).where(UserModel.user_id.in_(user_list))

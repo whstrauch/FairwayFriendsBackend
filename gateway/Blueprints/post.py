@@ -19,8 +19,20 @@ fs = gridfs.GridFS(db)
 post_routes = Blueprint("post", __name__)
 
 ## can add in global connection here to be used for sending messages. ie publisher
-# publishing_connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq')) #rabbitmq is name of container with rabbitmq instance
-# channel = publishing_connection.channel()
+publishing_connection = pika.BlockingConnection(
+    pika.ConnectionParameters(host="localhost", port=5672, heartbeat=60)
+)
+channel = publishing_connection.channel()
+
+@post_routes.get('/testrabbitmq')
+def test_rabbitmq():
+    channel.basic_publish(
+                            exchange= '', 
+                            routing_key='newsfeed',
+                            body=json.dumps({"user_id": 1, "post_id": 4}),
+                            properties=pika.BasicProperties(content_type='text/plain',
+                                                          delivery_mode=pika.DeliveryMode.Persistent))
+    return "Publisshed", 200
 
 @post_routes.get('/post/<int:id>')
 def get_post(id):
@@ -33,8 +45,8 @@ def get_post(id):
     if err:
         return err
 
-    post, status = post_request.request(f'get/{id}')
-    if status == 200:
+    post = post_request.request(f'get/{id}')
+    if post.status_code == 200:
         return post, 200
     else:
         return "Failure", 400
@@ -139,27 +151,29 @@ def create_post():
 
     print("tags", tags)
 
-    try:
-        message = post_request.request('tag/add', "POST",tags)
-        if message.status_code != 201:
-            return message, message.status_code
-    except Exception as e:
-        return e, 400
+    if len(tags) != 0:
+        try:
+            message = post_request.request('tag/add', "POST",tags)
+            if message.status_code != 201:
+                return message.text, message.status_code
+        except Exception as e:
+            return e, 400
 
     print("Tags uploaded...")
 
 
-    media = {
-        "post_id": post_id,
-        "media": image_uris
-    }
+    if len(image_uris) != 0:
+        media = {
+            "post_id": post_id,
+            "media": image_uris
+        }
 
-    try:
-        message = post_request.request('media/add', "POST", media)
-        if message.status_code != 201:
-            return "Failure", 400
-    except Exception as e:
-        return e, 400
+        try:
+            message = post_request.request('media/add', "POST", media)
+            if message.status_code != 201:
+                return "Failure", 400
+        except Exception as e:
+            return e, 400
 
 
     # Tells newsfeed of new post by user_id
@@ -168,7 +182,14 @@ def create_post():
         "user_id": request.form["user"]
     } ## -> Contains uris of media to uploaded, and uuid (maybe)
     
-    # channel.basic_publish('', 'newsfeed', message)
+    channel.basic_publish(
+                            exchange= '', 
+                            routing_key='newsfeed',
+                            body=json.dumps(message),
+                            properties=pika.BasicProperties(content_type='text/plain',
+                                                          delivery_mode=pika.DeliveryMode.Persistent)
+    )
+
 
     return "Success", 200
 

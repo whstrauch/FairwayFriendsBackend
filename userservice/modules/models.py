@@ -10,7 +10,7 @@ class SocialRelationships(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     follower_id = db.Column(db.Integer, db.ForeignKey('user.user_id'), nullable=False)
     followee_id = db.Column(db.Integer, db.ForeignKey('user.user_id'), nullable=False)
-    status = db.Column(ENUM("accepted", "pending", "rejected", "main", name="status"))
+    status = db.Column(ENUM("accepted", "pending", "rejected", "main", "new", name="status"))
     last_update = db.Column(db.DateTime(100))
     __table_args__ = (db.UniqueConstraint('follower_id', 'followee_id', name='_social_relationship_uc'),)
 

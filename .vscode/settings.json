@@ -1,5 +1,5 @@
 {
-    "python.defaultInterpreterPath": "/Users/willstrauch/Fairwayfriendsmain/python/src/scoreservice/env/bin/python",
+    "python.defaultInterpreterPath": "/Users/willstrauch/Fairwayfriendsmain/python/src/newsfeedservice/env/bin/python",
     "python.autoComplete.extraPaths": [
     
     ],

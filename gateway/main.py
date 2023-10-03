@@ -9,9 +9,11 @@ def create_app(test_config=None):
     from Blueprints.user import user_routes
     from Blueprints.post import post_routes
     from Blueprints.course import course_routes
+    from Blueprints.newsfeed import newsfeed
     app.register_blueprint(user_routes)
     app.register_blueprint(post_routes)
     app.register_blueprint(course_routes)
+    app.register_blueprint(newsfeed)
     ## Create consumer here so new connection and channel
     ## Dont pass connection
     
