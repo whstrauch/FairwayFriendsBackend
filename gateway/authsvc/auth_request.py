@@ -1,8 +1,9 @@
 import requests
+import os
 
 def request(path, body):
     resp = requests.post(
-        f"http://127.0.0.1:5001/{path}",
+        f"http://10.0.0.221:5001/{path}",
         headers={'content-type': 'application/json'},
         json=body
     )

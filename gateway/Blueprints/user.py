@@ -11,6 +11,9 @@ fs = gridfs.GridFS(db)
 
 
 user_routes = Blueprint("user", __name__)
+@user_routes.route("/")
+def hello_world():
+    return "<p>Hello, World!</p>"
 
 @user_routes.post('/login')
 def login():

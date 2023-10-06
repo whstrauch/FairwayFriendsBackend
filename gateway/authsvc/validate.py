@@ -9,7 +9,7 @@ def token(request):
         return None, ("Missing credentials", 401)
 
     resp = requests.post(
-        f"http://127.0.0.1:5001/verify",
+        f"http://10.0.0.221:5001/verify",
         headers={"Authorization" : token}
     )
     if resp.status_code == 200:

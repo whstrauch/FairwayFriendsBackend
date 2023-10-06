@@ -6,6 +6,7 @@ def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__)
     app.config["DEBUG"] = True
+    app.config["API_URL"] = "10.0.0.221"
     from Blueprints.user import user_routes
     from Blueprints.post import post_routes
     from Blueprints.course import course_routes
@@ -22,4 +23,4 @@ def create_app(test_config=None):
 
 if __name__ == "__main__":
     app = create_app()
-    app.run(port=5000, debug=True)
+    app.run(host='10.0.0.221', port=5000, debug=True)
