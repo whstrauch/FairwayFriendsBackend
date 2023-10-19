@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notiservice
+  labels:
+    app: notiservice
+
+spec: 
+  replicas: 2
+  selector:
+    matchLabels:
+      app: notiservice
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 3
+  template:
+    metadata:
+      labels:
+        app: notiservice
+    spec:
+      containers:
+        - name: notiservice
+          image: whstrauch/notiservice
+          ports:
+            - containerPort: 5007
+          envFrom:
+            - configMapRef:
+                name: notiservice-configmap
+            - secretRef:
+                name: notiservice-secret

@@ -5,7 +5,7 @@ from usersvc import user_request
 from pymongo import MongoClient
 from bson import ObjectId
 
-mongo = MongoClient('mongodb://localhost:27017/')
+mongo = MongoClient('mongodb://host.minikube.internal:27017/')
 db = mongo.fairwayfriends
 fs = gridfs.GridFS(db)
 

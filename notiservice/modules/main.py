@@ -5,7 +5,7 @@ import sys, os, threading, pika, json, requests
 def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__)
-    app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://willstrauch:Soccer99@localhost:5432/fairwayfriends"
+    app.config["SQLALCHEMY_DATABASE_URI"] = f"postgresql://willstrauch:Soccer99@{os.environ.get('POSTGRESQL_HOST')}:5432/fairwayfriends"
     app.config["DEBUG"] = True
     from models import db
     from routes import notifications
@@ -29,7 +29,7 @@ def callback(channel, method, properties, body):
     # Post notification to table
     resp = requests.request(
         "POST",
-        f"http://10.18.196.187:5007/",
+        f"http://host.minikube.internal:5007/",
         headers={'content-type': 'application/json'},
         data=body
     )
@@ -49,10 +49,10 @@ def main():
     
     # queue_thread = threading.Thread(target=queue_consume)
     # queue_thread.start()
-    app_thread = threading.Thread(target=app.run, kwargs={"host":'10.18.196.187',"port": 5007, "debug": False})
+    app_thread = threading.Thread(target=app.run, kwargs={"host":'0.0.0.0',"port": 5007, "debug": False})
     app_thread.start()
     connection = pika.BlockingConnection(
-        pika.ConnectionParameters(host="localhost", port=5672, heartbeat=60)
+        pika.ConnectionParameters(host="host.minikube.internal", port=5672, heartbeat=60)
     )
     channel = connection.channel()
     channel.queue_declare(queue="notifications")
@@ -66,7 +66,7 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("Interupted")
+        print("Interrupted")
         try:
             sys.exit(0)
         except SystemExit:

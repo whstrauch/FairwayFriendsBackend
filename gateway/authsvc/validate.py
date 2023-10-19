@@ -9,7 +9,7 @@ def token(request):
         return None, ("Missing credentials", 401)
 
     resp = requests.post(
-        f"http://10.18.196.187:5001/verify",
+        f"http://host.minikube.internal:5001/verify",
         headers={"Authorization" : token}
     )
     if resp.status_code == 200:

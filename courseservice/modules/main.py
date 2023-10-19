@@ -1,9 +1,10 @@
 from flask import Flask
+import os
 
 def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__)
-    app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://willstrauch:Soccer99@localhost:5432/golfcourses"
+    app.config["SQLALCHEMY_DATABASE_URI"] = f"postgresql://willstrauch:Soccer99@{os.environ.get('POSTGRESQL_HOST')}:5432/golfcourses"
     app.config["DEBUG"] = True
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["SECRET_KEY"] = "dev"
@@ -22,4 +23,4 @@ def create_app(test_config=None):
 
 if __name__ == "__main__":
     app = create_app()
-    app.run(host='10.18.196.187', port=5005, debug=True)
+    app.run(host='0.0.0.0', port=5005, debug=True)

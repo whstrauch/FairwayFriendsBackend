@@ -10,7 +10,7 @@ from pymongo import MongoClient
 from bson import ObjectId
 
 
-mongo = MongoClient('mongodb://localhost:27017/')
+mongo = MongoClient('mongodb://host.minikube.internal:27017/')
 db = mongo.fairwayfriends
 fs = gridfs.GridFS(db)
 
@@ -24,7 +24,7 @@ post_routes = Blueprint("post", __name__)
 @post_routes.get('/testrabbitmq')
 def test_rabbitmq():
     publishing_connection = pika.BlockingConnection(
-    pika.ConnectionParameters(host="localhost", port=5672, heartbeat=60)
+    pika.ConnectionParameters(host="host.minikube.internal", port=5672, heartbeat=60)
     )
     channel = publishing_connection.channel()
     channel.basic_publish(
@@ -183,7 +183,7 @@ def create_post():
 
     ##Creates rabbitmq connection and channel.
     publishing_connection = pika.BlockingConnection(
-        pika.ConnectionParameters(host="localhost", port=5672, heartbeat=60)
+        pika.ConnectionParameters(host="host.minikube.internal", port=5672, heartbeat=60)
     )
     channel = publishing_connection.channel()
     

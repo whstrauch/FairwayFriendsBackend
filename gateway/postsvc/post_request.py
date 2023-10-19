@@ -5,7 +5,7 @@ def request(path, method="POST", body={}):
 
     resp = requests.request(
         method,
-        f"http://10.18.196.187:5003/{path}",
+        f"http://host.minikube.internal:5003/",
         headers={'content-type': 'application/json'},
         json=body
     )

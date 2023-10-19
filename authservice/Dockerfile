@@ -8,7 +8,7 @@ RUN pip install --no-cache-dir --requirement /authservice/requirements.txt
 
 COPY . /authservice
 
-EXPOSE 5000
+EXPOSE 5001
 
 CMD ["python3", "modules/main.py"]
 

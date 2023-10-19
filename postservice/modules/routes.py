@@ -170,7 +170,7 @@ def like():
             }
 
             publishing_connection = pika.BlockingConnection(
-                pika.ConnectionParameters(host="localhost", port=5672, heartbeat=60)
+                pika.ConnectionParameters(host="host.minikube.internal", port=5672, heartbeat=60)
             )
             channel = publishing_connection.channel()
             
@@ -228,7 +228,7 @@ def comment():
             }
 
             publishing_connection = pika.BlockingConnection(
-                pika.ConnectionParameters(host="localhost", port=5672, heartbeat=60)
+                pika.ConnectionParameters(host="host.minikube.internal", port=5672, heartbeat=60)
             )
             channel = publishing_connection.channel()
             

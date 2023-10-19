@@ -6,6 +6,10 @@ from sqlalchemy.exc import IntegrityError, NoResultFound
 
 auth = Blueprint("auth", __name__)
 
+@auth.get("/test")
+def test_auth():
+    return "Running...", 200
+
 @auth.post("/login")
 def login():
     req = request.get_json(force=True)
