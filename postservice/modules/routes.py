@@ -2,6 +2,7 @@ from flask import request, Blueprint
 from models import db, PostModel, LikesModel, CommentModel, TagsModel, MediaModel
 from datetime import datetime, timezone
 from sqlalchemy import desc, func
+import pika, json
 
 post = Blueprint("post", __name__)
 
@@ -20,6 +21,14 @@ Routes needed:
     Remove tags/tag
     Update tags
 """
+
+@post.get('/get/<int:id>')
+def get_post(id):
+    """
+    Get singular post.
+    """
+    post = db.get_or_404(PostModel, id)
+    return post.toJSON(), 200
 
 @post.post('/getlist')
 def get_posts():
@@ -64,6 +73,8 @@ def create():
                 title = data.get('title', ''),
                 caption = data.get('caption', ''),
                 ratio = data.get('ratio', 1.4),
+                score = data.get('score', ''),
+                like_count = 0,
                 date = data.get('date', datetime.now(timezone.utc)) #Have to adjust since post new and old round, should be handled in frontend
             )
         
@@ -79,6 +90,7 @@ def delete():
     """
     Deletes post, requires post_id, user_id
     """
+    # Should delete notifications?
     data = request.get_json(force=True)
     if data is not None:
         post = db.get_or_404(PostModel, data["post_id"])
@@ -125,7 +137,12 @@ def is_liked(post_id, user_id):
     
     return {"is_liked": bool(is_liked)}, 200
 
-
+@post.get('/likes/<int:post_id>')
+def get_likes(post_id):
+    post = db.get_or_404(PostModel, post_id)
+    if post is not None:
+        return [like.toJSON() for like in post.likes], 200
+    return "Error", 404
 
 
 @post.post('/like/add')
@@ -133,6 +150,7 @@ def like():
     """
     Add like: requires post_id, user_id
     """
+    
     data = request.get_json(force=True)
     if data is not None:
         like = LikesModel(
@@ -145,6 +163,24 @@ def like():
             post.likes.append(like)
             db.session.commit()
             ## Add in message to be sent to notification service
+            noti_message = {
+                "source_id": like.id,
+                "user_id": post.user_id,
+                "n_type": "like"
+            }
+
+            publishing_connection = pika.BlockingConnection(
+                pika.ConnectionParameters(host="localhost", port=5672, heartbeat=60)
+            )
+            channel = publishing_connection.channel()
+            
+            channel.basic_publish(
+                                    exchange= '', 
+                                    routing_key='notifications',
+                                    body=json.dumps(noti_message),
+                                    properties=pika.BasicProperties(content_type='text/plain',
+                                                                delivery_mode=pika.DeliveryMode.Persistent)
+            )
             return {"text": "Success"}, 201
         except:
             return {"text":"Failure"}, 400
@@ -183,11 +219,40 @@ def comment():
             )
             db.session.add(comment)
             db.session.commit()
+            post = db.get_or_404(PostModel, data["post_id"])
             ## Add in message to be sent to notification service.
-            return {"text": "Success"}, 201
+            noti_message = {
+                "source_id": comment.id,
+                "user_id": post.user_id,
+                "n_type": "comment"
+            }
+
+            publishing_connection = pika.BlockingConnection(
+                pika.ConnectionParameters(host="localhost", port=5672, heartbeat=60)
+            )
+            channel = publishing_connection.channel()
+            
+            channel.basic_publish(
+                                    exchange= '', 
+                                    routing_key='notifications',
+                                    body=json.dumps(noti_message),
+                                    properties=pika.BasicProperties(content_type='text/plain',
+                                                                delivery_mode=pika.DeliveryMode.Persistent)
+            )
+            return comment.toJSON(), 201
         # except:
         #     return {"text": "Failure1"}, 400
     return {"text": "Must provide proper params"}, 400
+
+@post.get('/comments/<int:id>')
+def get_comments(id):
+    """
+    Get comments from given post_id
+    """
+    post = db.get_or_404(PostModel, id)
+    if post is not None:
+        return [comment.toJSON() for comment in reversed(post.comments)], 200
+    return "No post found", 404
 
 @post.delete('/comment/remove')
 def delete_comment():
@@ -321,5 +386,39 @@ def remove_media():
         except:
             return "Failure", 400
     return "Provide proper params", 400
+
+@post.put('/like-count/<string:action>/<int:id>')
+def update_like_count(action, id):
+    """
+    Update like count with post id
+    """
+    post = db.get_or_404(PostModel, id)
+    if post is not None:
+        if action == "inc":
+            post.like_count += 1
+        elif action == "dec":
+            post.like_count -= 1
+        else:
+            return "Invalid action", 400
+        db.session.commit()
+        return "Success", 200
+    return "No post found", 404
+
+
+@post.get('/comment/<int:id>')
+def get_comment(id):
+    """
+    Get comment.
+    """
+    comment = db.get_or_404(CommentModel, id)
+    return comment.toJSON(), 200
+
+@post.get('/like/<int:id>')
+def get_like(id):
+    """
+    Get like.
+    """
+    like = db.get_or_404(LikesModel, id)
+    return like.toJSON(), 200
 
 

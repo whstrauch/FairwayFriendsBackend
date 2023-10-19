@@ -18,4 +18,6 @@ def get_newsfeed(id):
     Gets newsfeed for specified user.
     """
     nfeed = mongo.db.newsfeed.find_one({"_id": id})
+    if nfeed is None:
+        return "Not found", 404
     return nfeed["newsfeed_list"], 200

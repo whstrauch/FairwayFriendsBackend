@@ -13,7 +13,7 @@ fs = gridfs.GridFS(db)
 user_routes = Blueprint("user", __name__)
 @user_routes.route("/")
 def hello_world():
-    return "<p>Hello, World!</p>"
+    return "<p>Katherine Has A Cute Face, and loves fat bears</p>"
 
 @user_routes.post('/login')
 def login():
@@ -56,6 +56,26 @@ def get_user(id):
         return err
 
     resp = user_request.request(f'get/{id}', "GET")
+
+    if resp.status_code == 201:
+        return resp, 201
+    else:
+        return resp.text, resp.status_code
+
+@user_routes.post('/user/relationship')
+def get_user_relationship():
+    """
+    Gets user from relationship, for follow requests
+    Protected.
+    """
+    # valid, err = validate.token(request)
+    # if err:
+    #     return err
+
+    data = request.get_json(force=True)
+    ids = data["ids"]
+
+    resp = user_request.request(f'get/relationship', "POST", {"ids": ids})
 
     if resp.status_code == 201:
         return resp, 201
@@ -196,6 +216,31 @@ def unfollow():
     else:
         return resp.text, resp.status_code
 
+@user_routes.put('/user/accept/<int:id>')
+def accept_follow(id):
+    valid, err = validate.token(request)
+    if err:
+        return err
+
+    resp = user_request.request(f'follow/accept/{id}', "PUT")
+
+    if resp.status_code == 200:
+        return resp.text, 200
+    else:
+        return resp.text, resp.status_code
+
+@user_routes.get('/user/follow-requests/<int:id>')
+def get_follow_requests(id):
+    valid, err = validate.token(request)
+    if err:
+        return err
+
+    resp = user_request.request(f'follow-requests/{id}', "GET")
+
+    if resp.ok:
+        return resp.json(), 200
+
+
 @user_routes.post('/user/follow')
 def follow_request():
     valid, err = validate.token(request)
@@ -222,6 +267,7 @@ def get_user_list():
     resp = user_request.request('userlist', "POST", request.get_json(force=True))
 
     return resp.json(), resp.status_code
+
 
 
 

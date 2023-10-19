@@ -75,6 +75,8 @@ class CommentModel(db.Model):
 
     def toJSON(self):
         return {
+            "comment_id": self.id,
+            "post_id": self.post_id,
             "user_id": self.user_id,
             "timestamp": self.timestamp,
             "comment": self.comment
@@ -96,8 +98,10 @@ class PostModel(db.Model):
     course_name = db.Column(db.String(120))
     title = db.Column(db.String(120))
     caption = db.Column(db.String(480))
+    like_count = db.Column(db.Integer)
     ratio = db.Column(db.Float(5))
     date = db.Column(db.DateTime(100), nullable=False)
+    score = db.Column(db.String(120))
     tags = db.relationship("TagsModel", back_populates='post', cascade="all, delete, delete-orphan")
     likes = db.relationship("LikesModel", back_populates='post', cascade="all, delete, delete-orphan")
     comments = db.relationship("CommentModel", back_populates='post', cascade='all, delete, delete-orphan')
@@ -112,7 +116,8 @@ class PostModel(db.Model):
             "title": self.title,
             "caption": self.caption,
             "ratio": self.ratio,
-            "likes": [like.toJSON() for like in self.likes], #This could create performance issues, milions of likes -> unlikely this happens anyways, deal w later
+            "like_count": self.like_count,
+            "score": self.score,
             "comments": [comment.toJSON() for comment in self.comments], #This could create performance issues
             "tags": [tag.toJSON() for tag in self.tags],
             "date": self.date.isoformat(),

@@ -23,7 +23,7 @@ def add_score():
         return {"id": str(result.inserted_id)}, 201
     return {"text": "Failure"}, 400
 
-@score.get('/score/post/<string:post_id>')
+@score.get('/score/post/<int:post_id>')
 def get_score(post_id):
     score = mongo.db.scores.find_one({"post_id": post_id})
     if score:
@@ -32,15 +32,6 @@ def get_score(post_id):
         return {"id": oid, **score}, 200
     return {"text": "Failure"}, 400
 
-@score.get('/score/<string:id>')
-def get_score_id(id):
-    id = ObjectId(id)
-    score = mongo.db.scores.find_one({"_id": id})
-    if score:
-        oid = str(score["_id"])
-        score.pop("_id")
-        return {"id": oid, **score}, 200
-    return {"text": "Failure"}, 400
 
 @score.get('/score/user/<string:id>')
 def get_user_scores(id):

@@ -3,6 +3,7 @@ from os import abort
 from flask import jsonify, request, Blueprint
 from models import db, UserModel, SocialRelationships
 from sqlalchemy import func, or_, text
+import pika, json
 
 user = Blueprint("user", __name__)
 
@@ -34,6 +35,21 @@ def get_user(id):
         if not curr_user:
             return "This User does not exist.", 404
         return curr_user.toJSON(), 200
+
+@user.post("/get/relationship")
+def get_user_from_relationship():
+    """
+    Gets user from social relationship, for follow requests.
+    """
+    users = []
+    data = request.get_json(force=True)
+    for id in data["ids"]:
+        relationship = db.get_or_404(SocialRelationships, id)
+        if relationship is not None:
+            user = db.get_or_404(UserModel, relationship.follower_id)
+            users.append(user.toJSON())
+    
+    return users, 200
 
 @user.post("/create")
 def create_user():
@@ -96,6 +112,35 @@ def delete_user(id):
     except:
         return "Failed", 400
 
+@user.get("/follow-requests/<int:id>")
+def get_follow_requests(id):
+    """
+    Get all follow requests for user
+    """
+    stmt = text(f"""
+        SELECT
+            public.user.name AS name,
+            public.user.user_id AS user_id,
+            public.user.username AS username,
+            public.user.profile_pic AS profile_pic,
+            r.id AS relationship_id,
+            COALESCE(r.status, 'new') AS is_following
+        FROM
+            public.user
+        LEFT JOIN
+            social_relationships r ON public.user.user_id = r.follower_id AND r.followee_id = {id}
+        WHERE
+            r.status = 'pending'
+    """)
+
+    result = db.session.execute(stmt)
+
+    users = [user._asdict() for user in result.all()]
+
+    return users, 200
+
+
+
 @user.post("/follow")
 def follow_request():
     """
@@ -112,6 +157,24 @@ def follow_request():
             db.session.add(a)
             db.session.commit()
             # Send message to notification service of follow request
+            noti_message = {
+                "source_id": a.id,
+                "user_id": followee.user_id,
+                "n_type": "follow_request"
+            }
+
+            publishing_connection = pika.BlockingConnection(
+                pika.ConnectionParameters(host="localhost", port=5672, heartbeat=60)
+            )
+            channel = publishing_connection.channel()
+            
+            channel.basic_publish(
+                                    exchange= '', 
+                                    routing_key='notifications',
+                                    body=json.dumps(noti_message),
+                                    properties=pika.BasicProperties(content_type='text/plain',
+                                                                delivery_mode=pika.DeliveryMode.Persistent)
+            )
             return {"text": "Success"}, 201
         # except KeyError as e:
         #     return e, 400
@@ -188,6 +251,11 @@ def get_followers(id, main_id):
         # results = db.session.execute(db.select(SocialRelationships).where(
         #     SocialRelationships.follower_id == id
         # ).order_by(SocialRelationships.follower_id))
+    value = ""
+    if main_id == 0:
+        value = "AND public.social_relationships.status = 'accepted'"
+
+
     stmt = text(f"""SELECT
             public.user.name AS name,
             public.user.user_id AS user_id,
@@ -202,7 +270,7 @@ def get_followers(id, main_id):
         LEFT JOIN
             social_relationships r ON public.user.user_id = r.followee_id AND r.follower_id = {main_id}
         WHERE
-            public.social_relationships.followee_id = {id}""")
+            public.social_relationships.followee_id = {id} {value}""")
 
     # stmt = db.select(UserModel.user_id, SocialRelationships.status, UserModel.name, UserModel.username).join(SocialRelationships, SocialRelationships.follower_id == UserModel.user_id).where(SocialRelationships.followee_id == id)
     results = db.session.execute(stmt)

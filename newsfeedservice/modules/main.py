@@ -31,7 +31,7 @@ def update_newsfeeds(channel, method, properties, body):
 
     resp = requests.request(
         "GET",
-        f"http://10.0.0.221:5002/followers/get/{user_id}/{user_id}",
+        f"http://10.18.196.187:5002/followers/get/{user_id}/0",
         headers={'content-type': 'application/json'}
     )
     
@@ -63,7 +63,7 @@ def main():
     
     # queue_thread = threading.Thread(target=queue_consume)
     # queue_thread.start()
-    app_thread = threading.Thread(target=app.run, kwargs={"host":'10.0.0.221',"port": 5006, "debug": False})
+    app_thread = threading.Thread(target=app.run, kwargs={"host":'10.18.196.187',"port": 5006, "debug": False})
     app_thread.start()
     connection = pika.BlockingConnection(
         pika.ConnectionParameters(host="localhost", port=5672, heartbeat=60)

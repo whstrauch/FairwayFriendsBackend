@@ -2,7 +2,7 @@ from flask import jsonify, request, Blueprint
 from models import db, guard, AuthModel
 from datetime import datetime, timezone
 from flask_praetorian import exceptions
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, NoResultFound
 
 auth = Blueprint("auth", __name__)
 
@@ -13,12 +13,14 @@ def login():
     username = req.get("username")
     password = req.get("password")
     if "@" in username:
-        curr_user = db.session.query(AuthModel).filter(AuthModel.email == username).one()
-        username = curr_user.username
+        curr_user = db.session.scalar(db.select(AuthModel).where(AuthModel.email == username))
+        if curr_user is not None:
+            username = curr_user.username
     else:
-        curr_user = db.session.query(AuthModel).filter(AuthModel.username == username).one()
+        curr_user = db.session.scalar(db.select(AuthModel).where(AuthModel.username == username))
+    
     if curr_user is None:
-        return "No user found", 404 
+        return "No user found", 401
     verified = curr_user.verify_password(username, password)
     if verified is None:
         return exceptions.AuthenticationError("Invalid Password"), 401
