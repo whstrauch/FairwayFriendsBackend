@@ -5,7 +5,7 @@ import os
 def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__)
-    app.config["SQLALCHEMY_DATABASE_URI"] = f"postgresql://willstrauch:Soccer99@{os.environ.get('POSTGRESQL_HOST')}:5432/fairwayfriends"
+    app.config["SQLALCHEMY_DATABASE_URI"] = f"postgresql://whstrauch:{os.environ.get('POSTGRESQL_PASSWORD')}@{os.environ.get('POSTGRESQL_HOST')}:5432/fairwayfriends"
     app.config["DEBUG"] = True
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["SECRET_KEY"] = "dev"

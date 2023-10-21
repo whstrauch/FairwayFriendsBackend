@@ -163,6 +163,7 @@ def follow_request():
                 "n_type": "follow_request"
             }
 
+            #Have to adjust with azure messaging bus
             publishing_connection = pika.BlockingConnection(
                 pika.ConnectionParameters(host="localhost", port=5672, heartbeat=60)
             )

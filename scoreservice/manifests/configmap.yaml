@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: scoreservice-configmap
 data:
-  POSTGRESQL_HOST: host.minikube.internal
-  POSTGRESQL_USER: willstrauch
-  POSTGRESQL_DB: fairwayfriends
-  POSTGRESQL_PORT: "5432"
+  MONGODB_HOST: fairway-friends.mongo.cosmos.azure.com
+  MONGODB_USER: fairway-friends
+  MONGODB_DB: scores
+  POSTGRESQL_PORT: "10255"

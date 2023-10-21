@@ -7,7 +7,7 @@ def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__)
     app.json_encoder = MongoJSONEncoder
-    app.config["MONGO_URI"] = f"mongodb://{os.environ.get('POSTGRESQL_HOST')}:27017/fairwayfriends"
+    app.config["MONGO_URI"] = f"mongodb://fairway-friends:9mbrZ5xFLABbcPUbEhw6LWEa8LGrm616jViVicnFxXsSvHljWbUxKhKeeviDb1cqviJGsSKTOCZmACDbCHck5g==@fairway-friends.mongo.cosmos.azure.com:10255/?ssl=true&replicaSet=globaldb&retrywrites=false&maxIdleTimeMS=120000&appName=@fairway-friends@"
     
     from routes import mongo, newsfeed
     app.register_blueprint(newsfeed)
@@ -31,7 +31,7 @@ def update_newsfeeds(channel, method, properties, body):
 
     resp = requests.request(
         "GET",
-        f"http://host.minikube.internal:5002/followers/get/{user_id}/0",
+        f"http://userservice:5002/followers/get/{user_id}/0",
         headers={'content-type': 'application/json'}
     )
     
@@ -65,8 +65,9 @@ def main():
     # queue_thread.start()
     app_thread = threading.Thread(target=app.run, kwargs={"host":'0.0.0.0',"port": 5006, "debug": False})
     app_thread.start()
+    #Might have to be adjusted with messaging bus.
     connection = pika.BlockingConnection(
-        pika.ConnectionParameters(host="localhost", port=5672, heartbeat=60)
+        pika.ConnectionParameters(host="host.minikube.internal", port=5672, heartbeat=60)
     )
     channel = connection.channel()
     channel.queue_declare(queue="newsfeed")

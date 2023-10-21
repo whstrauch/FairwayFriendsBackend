@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: courseservice-configmap
 data:
-  POSTGRESQL_HOST: host.minikube.internal
-  POSTGRESQL_USER: willstrauch
-  POSTGRESQL_DB: fairwayfriends
+  POSTGRESQL_HOST: fairway-friends.postgres.database.azure.com
+  POSTGRESQL_USER: whstrauch
+  POSTGRESQL_DB: golfcourses
   POSTGRESQL_PORT: "5432"

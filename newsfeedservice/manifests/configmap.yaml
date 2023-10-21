@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: newsfeedservice-configmap
 data:
-  POSTGRESQL_HOST: host.minikube.internal
-  POSTGRESQL_USER: willstrauch
+  MONGODB_HOST: fairway-friends.mongo.cosmos.azure.com
+  POSTGRESQL_USER: fairway-friends
   POSTGRESQL_DB: fairwayfriends
-  POSTGRESQL_PORT: "5432"
+  POSTGRESQL_PORT: "10255"

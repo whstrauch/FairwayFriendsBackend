@@ -1,26 +1,21 @@
 import json
 import time
 from flask import request, Blueprint
-import requests, os, gridfs
+import requests, os, uuid
 from authsvc import validate
 from postsvc import post_request
 from scoresvc import score_request
 import pika
-from pymongo import MongoClient
-from bson import ObjectId
 
-
-mongo = MongoClient('mongodb://host.minikube.internal:27017/')
-db = mongo.fairwayfriends
-fs = gridfs.GridFS(db)
-
+# This will be changed to connecting to azure blob storage
+from main import blob_service_client
 
 
 post_routes = Blueprint("post", __name__)
 
 ## can add in global connection here to be used for sending messages. ie publisher
 
-
+## ADJUST W AZURE MESSAGING BUS
 @post_routes.get('/testrabbitmq')
 def test_rabbitmq():
     publishing_connection = pika.BlockingConnection(
@@ -71,8 +66,8 @@ def get_user_post(id):
 
 @post_routes.get('/post/media/<string:path>')
 def get_image(path):
-    file = fs.find_one({"_id": ObjectId(path)})
-    data = file.read()
+    blob_client = blob_service_client.get_blob_client(blob=path)
+    data = blob_client.download_blob().read()
     return data, 200
 
     
@@ -98,8 +93,11 @@ def create_post():
 
     #Calculate aspect ratio for media to set for post display
     for i, file in enumerate(request.files.getlist("uploadFiles[]")):
-        fid = fs.put(file.stream)
-        image_uris.append({"path": str(fid), "width": sizes[i*2], "height": sizes[(i*2)+1]})
+        #Adjust for azure blob storage
+        fid = uuid.uuid4()
+        blob_client = blob_service_client.get_blob_client(blob=fid.hex)
+        blob_client.upload_blob(file.stream)
+        image_uris.append({"path": fid.hex, "width": sizes[i*2], "height": sizes[(i*2)+1]})
         ratio = int(sizes[(i*2) + 1]) / int(sizes[i*2])
         max_ratio = min(1.4, max(max_ratio, ratio))
 
@@ -181,7 +179,7 @@ def create_post():
 
 
 
-    ##Creates rabbitmq connection and channel.
+    ##Creates rabbitmq connection and channel. Adjust for azure messaging bus
     publishing_connection = pika.BlockingConnection(
         pika.ConnectionParameters(host="host.minikube.internal", port=5672, heartbeat=60)
     )
@@ -205,6 +203,7 @@ def delete_post():
     """
     ## MAKE SURE TO ADD IN DELETING IMAGES FROM IMAGE STORAGE
     ## Also message to newsfeed service to remove post?
+    ## Remove notifications too?
 
     valid, err = validate.token(request)
     if err:

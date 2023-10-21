@@ -5,7 +5,7 @@ import sys, os, threading, pika, json, requests
 def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__)
-    app.config["SQLALCHEMY_DATABASE_URI"] = f"postgresql://willstrauch:Soccer99@{os.environ.get('POSTGRESQL_HOST')}:5432/fairwayfriends"
+    app.config["SQLALCHEMY_DATABASE_URI"] = f"postgresql://{os.environ.get('POSTGRESQL_USER')}:{os.environ.get('POSTGRESQL_PASSWORD')}@{os.environ.get('POSTGRESQL_HOST')}:5432/fairwayfriends"
     app.config["DEBUG"] = True
     from models import db
     from routes import notifications
@@ -29,7 +29,7 @@ def callback(channel, method, properties, body):
     # Post notification to table
     resp = requests.request(
         "POST",
-        f"http://host.minikube.internal:5007/",
+        f"http://notiservice:5007/",
         headers={'content-type': 'application/json'},
         data=body
     )
@@ -51,6 +51,7 @@ def main():
     # queue_thread.start()
     app_thread = threading.Thread(target=app.run, kwargs={"host":'0.0.0.0',"port": 5007, "debug": False})
     app_thread.start()
+    #Adjust with azure messaging bus
     connection = pika.BlockingConnection(
         pika.ConnectionParameters(host="host.minikube.internal", port=5672, heartbeat=60)
     )
