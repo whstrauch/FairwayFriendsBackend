@@ -2,7 +2,11 @@ from flask import request, Blueprint
 from models import db, PostModel, LikesModel, CommentModel, TagsModel, MediaModel
 from datetime import datetime, timezone
 from sqlalchemy import desc, func
-import pika, json
+import json
+from azure.servicebus import ServiceBusClient, ServiceBusMessage
+
+CONNECTION_STRING = "Endpoint=sb://fairwayfriends.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=QorxUPJlWEA+L1vk9ELulua0Ain7BiBHu+ASbFKYJ1M="
+QUEUE_NAME = "notifications"
 
 post = Blueprint("post", __name__)
 
@@ -169,18 +173,11 @@ def like():
                 "n_type": "like"
             }
 
-            publishing_connection = pika.BlockingConnection(
-                pika.ConnectionParameters(host="host.minikube.internal", port=5672, heartbeat=60)
-            )
-            channel = publishing_connection.channel()
-            
-            channel.basic_publish(
-                                    exchange= '', 
-                                    routing_key='notifications',
-                                    body=json.dumps(noti_message),
-                                    properties=pika.BasicProperties(content_type='text/plain',
-                                                                delivery_mode=pika.DeliveryMode.Persistent)
-            )
+            with ServiceBusClient.from_connection_string(CONNECTION_STRING) as client:
+                with client.get_queue_sender(QUEUE_NAME) as sender:
+                    # Sending a single message
+                    single_message = ServiceBusMessage(json.dumps(noti_message))
+                    sender.send_messages(single_message)
             return {"text": "Success"}, 201
         except:
             return {"text":"Failure"}, 400
@@ -227,18 +224,11 @@ def comment():
                 "n_type": "comment"
             }
 
-            publishing_connection = pika.BlockingConnection(
-                pika.ConnectionParameters(host="host.minikube.internal", port=5672, heartbeat=60)
-            )
-            channel = publishing_connection.channel()
-            
-            channel.basic_publish(
-                                    exchange= '', 
-                                    routing_key='notifications',
-                                    body=json.dumps(noti_message),
-                                    properties=pika.BasicProperties(content_type='text/plain',
-                                                                delivery_mode=pika.DeliveryMode.Persistent)
-            )
+            with ServiceBusClient.from_connection_string(CONNECTION_STRING) as client:
+                with client.get_queue_sender(QUEUE_NAME) as sender:
+                    # Sending a single message
+                    single_message = ServiceBusMessage(json.dumps(noti_message))
+                    sender.send_messages(single_message)
             return comment.toJSON(), 201
         # except:
         #     return {"text": "Failure1"}, 400

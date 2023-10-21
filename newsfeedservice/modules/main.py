@@ -2,6 +2,11 @@ from flask import Flask
 from flask_pymongo import PyMongo
 from mongoflask import MongoJSONEncoder, ObjectIdConverter
 import pika, sys, os, threading, json, time, requests
+from azure.servicebus import ServiceBusClient
+
+CONNECTION_STRING = "Endpoint=sb://fairwayfriends.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=QorxUPJlWEA+L1vk9ELulua0Ain7BiBHu+ASbFKYJ1M="
+QUEUE_NAME = "newsfeed"
+
 
 def create_app(test_config=None):
     # create and configure the app
@@ -18,7 +23,7 @@ def create_app(test_config=None):
     
     return app
 
-def update_newsfeeds(channel, method, properties, body):
+def update_newsfeeds(body):
     """
     Callback when message is received, message contains post id and 
     user id to update all newsfeeds for users that follow the poster.
@@ -49,13 +54,14 @@ def update_newsfeeds(channel, method, properties, body):
     
 
     print("MESSAGE RECEIVED", message)
-    if channel:
-        channel.basic_ack(delivery_tag=method.delivery_tag)
 
-
-def queue_consume(channel):
-    #rabbitmq connection
-    channel.start_consuming()
+def receive_messages():
+    with ServiceBusClient.from_connection_string(CONNECTION_STRING) as client:
+    # max_wait_time specifies how long the receiver should wait with no incoming messages before stopping receipt.
+    # Default is None; to receive forever.
+        with client.get_queue_receiver(QUEUE_NAME) as receiver:
+            for msg in receiver:  # ServiceBusReceiver instance is a generator.
+                update_newsfeeds(msg)
 
 def main():
 
@@ -66,15 +72,8 @@ def main():
     app_thread = threading.Thread(target=app.run, kwargs={"host":'0.0.0.0',"port": 5006, "debug": False})
     app_thread.start()
     #Might have to be adjusted with messaging bus.
-    connection = pika.BlockingConnection(
-        pika.ConnectionParameters(host="host.minikube.internal", port=5672, heartbeat=60)
-    )
-    channel = connection.channel()
-    channel.queue_declare(queue="newsfeed")
-    channel.basic_consume(queue="newsfeed", on_message_callback=update_newsfeeds)
-    print("Queue consuming started.")
     
-    queue_thread = threading.Thread(target=queue_consume, args=(channel,))
+    queue_thread = threading.Thread(target=receive_messages)
     queue_thread.start()
 
 if __name__ == "__main__":

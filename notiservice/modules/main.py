@@ -2,6 +2,11 @@ from flask_sqlalchemy import SQLAlchemy
 from flask import Flask
 import sys, os, threading, pika, json, requests
 
+from azure.servicebus import ServiceBusClient
+
+CONNECTION_STRING = "Endpoint=sb://fairwayfriends.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=QorxUPJlWEA+L1vk9ELulua0Ain7BiBHu+ASbFKYJ1M="
+QUEUE_NAME = "notifications"
+
 def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__)
@@ -19,7 +24,7 @@ def create_app(test_config=None):
     
     return app
 
-def callback(channel, method, properties, body):
+def callback(body):
     """
     Callback when message is received, message contains post id and 
     user id to update all newsfeeds for users that follow the poster.
@@ -34,14 +39,16 @@ def callback(channel, method, properties, body):
         data=body
     )
 
-    if channel:
-        channel.basic_ack(delivery_tag=method.delivery_tag)
 
 
-
-def queue_consume(channel):
-    #rabbitmq connection
-    channel.start_consuming()
+def queue_consume():
+    #azuremq connection
+    with ServiceBusClient.from_connection_string(CONNECTION_STRING) as client:
+    # max_wait_time specifies how long the receiver should wait with no incoming messages before stopping receipt.
+    # Default is None; to receive forever.
+        with client.get_queue_receiver(QUEUE_NAME) as receiver:
+            for msg in receiver:  # ServiceBusReceiver instance is a generator.
+                callback(msg)
 
 def main():
 
@@ -52,15 +59,9 @@ def main():
     app_thread = threading.Thread(target=app.run, kwargs={"host":'0.0.0.0',"port": 5007, "debug": False})
     app_thread.start()
     #Adjust with azure messaging bus
-    connection = pika.BlockingConnection(
-        pika.ConnectionParameters(host="host.minikube.internal", port=5672, heartbeat=60)
-    )
-    channel = connection.channel()
-    channel.queue_declare(queue="notifications")
-    channel.basic_consume(queue="notifications", on_message_callback=callback)
-    print("Queue consuming started.")
     
-    queue_thread = threading.Thread(target=queue_consume, args=(channel,))
+    
+    queue_thread = threading.Thread(target=queue_consume)
     queue_thread.start()
 
 if __name__ == "__main__":

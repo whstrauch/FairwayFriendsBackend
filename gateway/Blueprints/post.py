@@ -5,29 +5,25 @@ import requests, os, uuid
 from authsvc import validate
 from postsvc import post_request
 from scoresvc import score_request
-import pika
-
+from azure.servicebus import ServiceBusClient, ServiceBusMessage
 # This will be changed to connecting to azure blob storage
 from main import blob_service_client
 
+CONNECTION_STRING = "Endpoint=sb://fairwayfriends.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=QorxUPJlWEA+L1vk9ELulua0Ain7BiBHu+ASbFKYJ1M="
+QUEUE_NAME = "newsfeed"
 
 post_routes = Blueprint("post", __name__)
 
 ## can add in global connection here to be used for sending messages. ie publisher
 
 ## ADJUST W AZURE MESSAGING BUS
-@post_routes.get('/testrabbitmq')
+@post_routes.get('/testazuremq')
 def test_rabbitmq():
-    publishing_connection = pika.BlockingConnection(
-    pika.ConnectionParameters(host="host.minikube.internal", port=5672, heartbeat=60)
-    )
-    channel = publishing_connection.channel()
-    channel.basic_publish(
-                            exchange= '', 
-                            routing_key='newsfeed',
-                            body=json.dumps({"user_id": 1, "post_id": 4}),
-                            properties=pika.BasicProperties(content_type='text/plain',
-                                                          delivery_mode=pika.DeliveryMode.Persistent))
+    with ServiceBusClient.from_connection_string(CONNECTION_STRING) as client:
+     with client.get_queue_sender(QUEUE_NAME) as sender:
+        # Sending a single message
+        single_message = ServiceBusMessage("Single message")
+        sender.send_messages(single_message)
     return "Publisshed", 200
 
 @post_routes.get('/post/<int:id>')
@@ -180,18 +176,11 @@ def create_post():
 
 
     ##Creates rabbitmq connection and channel. Adjust for azure messaging bus
-    publishing_connection = pika.BlockingConnection(
-        pika.ConnectionParameters(host="host.minikube.internal", port=5672, heartbeat=60)
-    )
-    channel = publishing_connection.channel()
-    
-    channel.basic_publish(
-                            exchange= '', 
-                            routing_key='newsfeed',
-                            body=json.dumps(news_message),
-                            properties=pika.BasicProperties(content_type='text/plain',
-                                                          delivery_mode=pika.DeliveryMode.Persistent)
-    )
+    with ServiceBusClient.from_connection_string(CONNECTION_STRING) as client:
+        with client.get_queue_sender(QUEUE_NAME) as sender:
+        # Sending a single message
+            single_message = ServiceBusMessage(json.dumps(news_message))
+            sender.send_messages(single_message)
 
 
     return "Success", 200

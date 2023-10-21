@@ -3,7 +3,12 @@ from os import abort
 from flask import jsonify, request, Blueprint
 from models import db, UserModel, SocialRelationships
 from sqlalchemy import func, or_, text
-import pika, json
+import json
+from azure.servicebus import ServiceBusMessage, ServiceBusClient
+
+CONNECTION_STRING = "Endpoint=sb://fairwayfriends.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=QorxUPJlWEA+L1vk9ELulua0Ain7BiBHu+ASbFKYJ1M="
+QUEUE_NAME = "notifications"
+
 
 user = Blueprint("user", __name__)
 
@@ -164,18 +169,11 @@ def follow_request():
             }
 
             #Have to adjust with azure messaging bus
-            publishing_connection = pika.BlockingConnection(
-                pika.ConnectionParameters(host="localhost", port=5672, heartbeat=60)
-            )
-            channel = publishing_connection.channel()
-            
-            channel.basic_publish(
-                                    exchange= '', 
-                                    routing_key='notifications',
-                                    body=json.dumps(noti_message),
-                                    properties=pika.BasicProperties(content_type='text/plain',
-                                                                delivery_mode=pika.DeliveryMode.Persistent)
-            )
+            with ServiceBusClient.from_connection_string(CONNECTION_STRING) as client:
+                with client.get_queue_sender(QUEUE_NAME) as sender:
+                    # Sending a single message
+                    single_message = ServiceBusMessage(json.dumps(noti_message))
+                    sender.send_messages(single_message)
             return {"text": "Success"}, 201
         # except KeyError as e:
         #     return e, 400
