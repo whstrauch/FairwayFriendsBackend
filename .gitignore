@@ -1,0 +1,11 @@
+#Ignore env
+**/env/
+
+#Ignore venv
+**/venv/
+
+#Ignore pycache
+**/__pycache__/
+
+#Ignore secrets
+**/secrets.yaml
