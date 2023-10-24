@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scoreservice
+  labels:
+    app: scoreservice
+
+spec: 
+  replicas: 1
+  selector:
+    matchLabels:
+      app: scoreservice
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 3
+  template:
+    metadata:
+      labels:
+        app: scoreservice
+    spec:
+      containers:
+        - name: scoreservice
+          image: fairwayfriends.azurecr.io/scoreservice
+          ports:
+            - containerPort: 5008
+          envFrom:
+            - configMapRef:
+                name: scoreservice-configmap
+            - secretRef:
+                name: scoreservice-secret

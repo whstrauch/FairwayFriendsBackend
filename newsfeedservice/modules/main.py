@@ -1,10 +1,11 @@
 from flask import Flask
 from flask_pymongo import PyMongo
 from mongoflask import MongoJSONEncoder, ObjectIdConverter
-import pika, sys, os, threading, json, time, requests
+import sys, os, threading, json, logging, requests
 from azure.servicebus import ServiceBusClient
+from waitress import serve
 
-CONNECTION_STRING = "Endpoint=sb://fairwayfriends.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=QorxUPJlWEA+L1vk9ELulua0Ain7BiBHu+ASbFKYJ1M="
+CONNECTION_STRING = os.environ.get("MQ_CONNECTION_STRING")
 QUEUE_NAME = "newsfeed"
 
 
@@ -12,7 +13,7 @@ def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__)
     app.json_encoder = MongoJSONEncoder
-    app.config["MONGO_URI"] = f"mongodb://fairway-friends:9mbrZ5xFLABbcPUbEhw6LWEa8LGrm616jViVicnFxXsSvHljWbUxKhKeeviDb1cqviJGsSKTOCZmACDbCHck5g==@fairway-friends.mongo.cosmos.azure.com:10255/?ssl=true&replicaSet=globaldb&retrywrites=false&maxIdleTimeMS=120000&appName=@fairway-friends@"
+    app.config["MONGO_URI"] = os.environ.get('MONGODB_CONNECTION_STRING')
     
     from routes import mongo, newsfeed
     app.register_blueprint(newsfeed)
@@ -56,6 +57,7 @@ def update_newsfeeds(body):
     print("MESSAGE RECEIVED", message)
 
 def receive_messages():
+    print("receiving messages...")
     with ServiceBusClient.from_connection_string(CONNECTION_STRING) as client:
     # max_wait_time specifies how long the receiver should wait with no incoming messages before stopping receipt.
     # Default is None; to receive forever.
@@ -64,12 +66,12 @@ def receive_messages():
                 update_newsfeeds(msg)
 
 def main():
-
+    print('creating app...')
     app = create_app()
-    
-    # queue_thread = threading.Thread(target=queue_consume)
-    # queue_thread.start()
-    app_thread = threading.Thread(target=app.run, kwargs={"host":'0.0.0.0',"port": 5006, "debug": False})
+    print('app created, configuring logging...')
+    logger = logging.getLogger('waitress')
+    logger.setLevel(logging.INFO)
+    app_thread = threading.Thread(target=serve, args={app}, kwargs={"host":'localhost',"port": 5006})
     app_thread.start()
     #Might have to be adjusted with messaging bus.
     
@@ -80,7 +82,7 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("Interupted")
+        print("Interrupted")
         try:
             sys.exit(0)
         except SystemExit:

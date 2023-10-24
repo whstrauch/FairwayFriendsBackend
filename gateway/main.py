@@ -1,14 +1,14 @@
-from flask_sqlalchemy import SQLAlchemy
 from flask import Flask
-import pika, os
-from azure.storage.blob import BlobServiceClient, ContainerClient, BlobClient
+from azure.storage.blob import BlobServiceClient
+import os, logging
+from waitress import serve
+
 
 connection_string = os.environ.get('AZURE_STORAGE_CONNECTION_STRING')
 blob_service_client = BlobServiceClient.from_connection_string(connection_string)
 
 def create_blob_root_container(blob_service_client: BlobServiceClient):
     container_client = blob_service_client.get_container_client(container="$root")
-
     # Create the root container if it doesn't already exist
     if not container_client.exists():
         container_client.create_container()
@@ -16,7 +16,7 @@ def create_blob_root_container(blob_service_client: BlobServiceClient):
 def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__)
-    app.config["DEBUG"] = True
+    app.config["DEBUG"] = False
     # app.config["API_URL"] = "localhost"
     from Blueprints.user import user_routes
     from Blueprints.post import post_routes
@@ -36,5 +36,10 @@ def create_app(test_config=None):
     return app
 
 if __name__ == "__main__":
+    print("creating app...")
     app = create_app()
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    print("app created, starting server...")
+    logger = logging.getLogger('waitress')
+    logger.setLevel(logging.INFO)
+    serve(app, host='localhost', port=5000)
+    print('server closed')

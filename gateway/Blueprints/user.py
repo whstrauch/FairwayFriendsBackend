@@ -2,18 +2,20 @@ from flask import request, Blueprint
 import requests, os, gridfs, json, uuid
 from authsvc import validate, auth_request
 from usersvc import user_request
-from pymongo import MongoClient
-from bson import ObjectId
+import psutil
 
-mongo = MongoClient('mongodb://host.minikube.internal:27017/')
-db = mongo.fairwayfriends
-fs = gridfs.GridFS(db)
+process = psutil.Process(os.getpid())
+
 
 
 user_routes = Blueprint("user", __name__)
 @user_routes.route("/")
 def hello_world():
     return "<p>Katherine Has A Cute Face, and loves fat bears</p>"
+
+@user_routes.route('/memory')
+def print_memory():
+    return {'memory': process.memory_info().rss}
 
 @user_routes.post('/login')
 def login():
@@ -106,24 +108,25 @@ def create_user_info():
 def user_prof_pic(path):
     """
     Add or update profile pic.
+    ADJUST WITH AZURE BLOB STORAGE
     """
-    
+    pass
 
-    if request.method == "GET":
-        file = fs.find_one({"_id": ObjectId(path)})
-        data = file.read()
-        return data, 200
-    valid, err = validate.token(request)
-    if err:
-        return err
-    file = request.files["profile_pic"]
-    fid = fs.put(file.stream, user_id=request.form["user_id"])
-    data = {
-        "user_id": request.form["user_id"],
-        "path": str(fid)
-    }
-    resp = user_request.request('profile-pic', "POST", data)
-    return resp.text, resp.status_code
+    # if request.method == "GET":
+    #     file = fs.find_one({"_id": ObjectId(path)})
+    #     data = file.read()
+    #     return data, 200
+    # valid, err = validate.token(request)
+    # if err:
+    #     return err
+    # file = request.files["profile_pic"]
+    # fid = fs.put(file.stream, user_id=request.form["user_id"])
+    # data = {
+    #     "user_id": request.form["user_id"],
+    #     "path": str(fid)
+    # }
+    # resp = user_request.request('profile-pic', "POST", data)
+    # return resp.text, resp.status_code
 
 
 

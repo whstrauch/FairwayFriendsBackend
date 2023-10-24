@@ -2,9 +2,16 @@ from flask import jsonify, request, Blueprint
 from models import db, guard, AuthModel
 from datetime import datetime, timezone
 from flask_praetorian import exceptions
+import os, psutil
 from sqlalchemy.exc import IntegrityError, NoResultFound
 
 auth = Blueprint("auth", __name__)
+
+process = psutil.Process(os.getpid())
+
+@auth.get("/memory")
+def print_memory():
+    return {'memory': process.memory_info().rss}
 
 @auth.get("/test")
 def test_auth():

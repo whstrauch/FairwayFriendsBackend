@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: userservice
+  labels:
+    app: userservice
+
+spec: 
+  replicas: 1
+  selector:
+    matchLabels:
+      app: userservice
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 3
+  template:
+    metadata:
+      labels:
+        app: userservice
+    spec:
+      containers:
+        - name: userservice
+          image: fairwayfriends.azurecr.io/userservice
+          ports:
+            - containerPort: 5002
+          envFrom:
+            - configMapRef:
+                name: userservice-configmap
+            - secretRef:
+                name: userservice-secret

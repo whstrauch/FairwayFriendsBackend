@@ -1,7 +1,6 @@
 import json
-import time
 from flask import request, Blueprint
-import requests, os, uuid
+import uuid
 from authsvc import validate
 from postsvc import post_request
 from scoresvc import score_request

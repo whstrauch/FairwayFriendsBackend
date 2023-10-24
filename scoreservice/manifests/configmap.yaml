@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: scoreservice-configmap
-data:
-  MONGODB_HOST: fairway-friends.mongo.cosmos.azure.com
-  MONGODB_USER: fairway-friends
-  MONGODB_DB: scores
-  POSTGRESQL_PORT: "10255"

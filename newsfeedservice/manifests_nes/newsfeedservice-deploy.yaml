@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: newsfeedservice
+  labels:
+    app: newsfeedservice
+
+spec: 
+  replicas: 1
+  selector:
+    matchLabels:
+      app: newsfeedservice
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 3
+  template:
+    metadata:
+      labels:
+        app: newsfeedservice
+    spec:
+      containers:
+        - name: newsfeedservice
+          image: fairwayfriends.azurecr.io/newsfeedservice
+          ports:
+            - containerPort: 5006
+          envFrom:
+            - configMapRef:
+                name: newsfeedservice-configmap
+            - secretRef:
+                name: newsfeedservice-secret

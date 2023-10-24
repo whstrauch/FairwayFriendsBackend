@@ -1,17 +1,17 @@
-from flask_sqlalchemy import SQLAlchemy
 from flask import Flask
-import sys, os, threading, pika, json, requests
+import sys, os, threading, logging, requests
+from waitress import serve
 
 from azure.servicebus import ServiceBusClient
 
-CONNECTION_STRING = "Endpoint=sb://fairwayfriends.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=QorxUPJlWEA+L1vk9ELulua0Ain7BiBHu+ASbFKYJ1M="
+CONNECTION_STRING = os.environ.get('MQ_CONNECTION_STRING')
 QUEUE_NAME = "notifications"
 
 def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__)
     app.config["SQLALCHEMY_DATABASE_URI"] = f"postgresql://{os.environ.get('POSTGRESQL_USER')}:{os.environ.get('POSTGRESQL_PASSWORD')}@{os.environ.get('POSTGRESQL_HOST')}:5432/fairwayfriends"
-    app.config["DEBUG"] = True
+    app.config["DEBUG"] = False
     from models import db
     from routes import notifications
     app.register_blueprint(notifications)
@@ -43,6 +43,7 @@ def callback(body):
 
 def queue_consume():
     #azuremq connection
+    print('receiving messages...')
     with ServiceBusClient.from_connection_string(CONNECTION_STRING) as client:
     # max_wait_time specifies how long the receiver should wait with no incoming messages before stopping receipt.
     # Default is None; to receive forever.
@@ -51,12 +52,15 @@ def queue_consume():
                 callback(msg)
 
 def main():
-
+    print('creating app...')
     app = create_app()
     
     # queue_thread = threading.Thread(target=queue_consume)
     # queue_thread.start()
-    app_thread = threading.Thread(target=app.run, kwargs={"host":'0.0.0.0',"port": 5007, "debug": False})
+    print('app created, configuring logging...')
+    logger = logging.getLogger('waitress')
+    logger.setLevel(logging.INFO)
+    app_thread = threading.Thread(target=serve, args={app}, kwargs={"host":'localhost',"port": 5007})
     app_thread.start()
     #Adjust with azure messaging bus
     
